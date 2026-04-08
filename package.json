@@ -1,0 +1,44 @@
+{
+  "name": "eye-guard-temp",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "py:install": ".venv/bin/python -m pip install -r python/requirements.txt",
+    "ml:download": "set -a && . ./.env.local && set +a && cd python && ../.venv/bin/python -m eyeguard_ml.data.kaggle_download",
+    "ml:train": "set -a && . ./.env.local && set +a && cd python && ../.venv/bin/python -m eyeguard_ml.training.train",
+    "ml:serve": "set -a && . ./.env.local && set +a && cd python && ../.venv/bin/python -m eyeguard_ml.core.inference_api"
+  },
+  "dependencies": {
+    "@clerk/nextjs": "^7.0.11",
+    "@neondatabase/serverless": "^1.0.2",
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.37.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "drizzle-orm": "^0.45.2",
+    "framer-motion": "^12.38.0",
+    "lucide-react": "^1.7.0",
+    "next": "16.2.2",
+    "qrcode.react": "^4.2.0",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "recharts": "^3.8.1",
+    "resend": "^6.10.0",
+    "tailwind-merge": "^3.5.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20.19.39",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "drizzle-kit": "^0.31.10",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.2",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}

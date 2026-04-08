@@ -1,0 +1,42 @@
+{
+  "task": "eye_state_classification",
+  "classes": [
+    "Closed",
+    "Open"
+  ],
+  "image_size": 64,
+  "dataset_paths": {
+    "mrl_eye_dataset": "/Users/sauravkumar/.cache/kagglehub/datasets/akashshingha850/mrl-eye-dataset/versions/4",
+    "blink_detection": "/Users/sauravkumar/.cache/kagglehub/datasets/inder123/blinking-eye-detection/versions/1",
+    "mrl_cew_combined": "/Users/sauravkumar/.cache/kagglehub/datasets/prasadvpatil/mrl-dataset/versions/4",
+    "open_closed_eyes": "/Users/sauravkumar/.cache/kagglehub/datasets/sehriyarmemmedli/open-closed-eyes-dataset/versions/3"
+  },
+  "class_balance": {
+    "closed": 2000,
+    "open": 2000
+  },
+  "splits": {
+    "train": 2800,
+    "val": 600,
+    "test": 600
+  },
+  "final_train_accuracy": 0.9946428537368774,
+  "final_val_accuracy": 0.9866666793823242,
+  "test": {
+    "confusion_matrix": [
+      [
+        295,
+        5
+      ],
+      [
+        5,
+        295
+      ]
+    ],
+    "accuracy": 0.9833333333333333,
+    "precision": 0.9833333333333333,
+    "recall": 0.9833333333333333,
+    "f1": 0.9833333333333333,
+    "report": "              precision    recall  f1-score   support\n\n           0       0.98      0.98      0.98       300\n           1       0.98      0.98      0.98       300\n\n    accuracy                           0.98       600\n   macro avg       0.98      0.98      0.98       600\nweighted avg       0.98      0.98      0.98       600\n"
+  }
+}
