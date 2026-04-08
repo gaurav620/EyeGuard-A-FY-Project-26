@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Activity, AlertTriangle, Camera, CheckCircle2, Eye, Sparkles, Timer, Video, VideoOff } from "lucide-react";
+import { Activity, AlertTriangle, Camera, CheckCircle2, Eye, LoaderCircle, Sparkles, Timer, Video, VideoOff } from "lucide-react";
 
 type FatigueResponse = {
   ok: boolean;
@@ -37,6 +37,8 @@ export function LiveEyeCheck() {
   const sampleCountRef = useRef(0);
 
   const [running, setRunning] = useState(false);
+  const [starting, setStarting] = useState(false);
+  const [videoReady, setVideoReady] = useState(false);
   const [error, setError] = useState<string>("");
   const [sessionId] = useState(() => crypto.randomUUID());
   const [startedAt, setStartedAt] = useState<number | null>(null);
@@ -51,6 +53,7 @@ export function LiveEyeCheck() {
   const [scoreHistory, setScoreHistory] = useState<number[]>([]);
   const [eyeStateLabel, setEyeStateLabel] = useState<"Closed" | "Open" | "Unknown">("Unknown");
   const [eyeStateConfidence, setEyeStateConfidence] = useState(0);
+  const [lastInferenceAt, setLastInferenceAt] = useState<number | null>(null);
 
   const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
@@ -223,6 +226,8 @@ export function LiveEyeCheck() {
     }
 
     setRunning(false);
+    setStarting(false);
+    setVideoReady(false);
     setTrackingQuality(0);
   };
 
@@ -343,6 +348,7 @@ export function LiveEyeCheck() {
         const open = result.data.eyeState.openProbability;
         setEyeStateLabel(result.data.eyeState.label);
         setEyeStateConfidence(Math.round(Math.max(closed, open) * 100));
+        setLastInferenceAt(Date.now());
       }
       setScoreHistory((current) => {
         const next = [...current, result.data.score];
@@ -355,9 +361,11 @@ export function LiveEyeCheck() {
 
   const startCamera = async () => {
     setError("");
+    setStarting(true);
     try {
       if (!navigator.mediaDevices?.getUserMedia) {
         setError("Your browser does not support webcam access.");
+        setStarting(false);
         return;
       }
 
@@ -374,6 +382,7 @@ export function LiveEyeCheck() {
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         await videoRef.current.play();
+        setVideoReady(videoRef.current.readyState >= 2);
       }
 
       const now = Date.now();
@@ -389,6 +398,7 @@ export function LiveEyeCheck() {
       setScoreHistory([]);
       setEyeStateLabel("Unknown");
       setEyeStateConfidence(0);
+      setLastInferenceAt(null);
       previousFrameLumaRef.current = null;
       baselineEyeTextureRef.current = null;
       blinkCountRef.current = 0;
@@ -402,6 +412,8 @@ export function LiveEyeCheck() {
     } catch {
       setError("Unable to open your camera. Please allow camera permission and retry.");
       stopCamera();
+    } finally {
+      setStarting(false);
     }
   };
 
@@ -516,10 +528,11 @@ export function LiveEyeCheck() {
               {!running ? (
                 <button
                   onClick={() => void startCamera()}
+                  disabled={starting}
                   className="inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-background hover:bg-accent/90 transition-colors"
                 >
-                  <Video className="h-4 w-4" />
-                  Start Eye Check
+                  {starting ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Video className="h-4 w-4" />}
+                  {starting ? "Starting Camera..." : "Start Eye Check"}
                 </button>
               ) : (
                 <button
@@ -535,7 +548,15 @@ export function LiveEyeCheck() {
 
           <div className="mt-4 overflow-hidden rounded-lg border border-card-border bg-background/50">
             <div className="relative">
-              <video ref={videoRef} autoPlay muted playsInline className="h-72 w-full object-cover" />
+              <video
+                ref={videoRef}
+                autoPlay
+                muted
+                playsInline
+                onLoadedData={() => setVideoReady(true)}
+                onCanPlay={() => setVideoReady(true)}
+                className="h-72 w-full object-cover"
+              />
               {!running ? (
                 <div className="absolute inset-0 flex items-center justify-center bg-background/70">
                   <div className="text-center">
@@ -544,7 +565,19 @@ export function LiveEyeCheck() {
                     <p className="mt-1 text-xs text-muted">Click Start Eye Check to begin</p>
                   </div>
                 </div>
-              ) : null}
+              ) : !videoReady ? (
+                <div className="absolute inset-0 flex items-center justify-center bg-background/55">
+                  <div className="text-center">
+                    <LoaderCircle className="mx-auto h-8 w-8 animate-spin text-cyan-400" />
+                    <p className="mt-2 text-sm font-semibold text-foreground">Initializing camera feed...</p>
+                    <p className="mt-1 text-xs text-muted">Please keep this tab active and allow permissions.</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="absolute right-3 top-3 rounded-full border border-emerald-300 bg-emerald-100/90 px-2 py-1 text-[10px] font-semibold text-emerald-700">
+                  LIVE VIDEO
+                </div>
+              )}
             </div>
           </div>
           {error ? <p className="mt-3 text-sm text-red-400">{error}</p> : null}
@@ -556,6 +589,13 @@ export function LiveEyeCheck() {
               Tracking quality: <span className="font-semibold text-foreground">{trackingQuality}%</span>
             </p>
           )}
+
+          {running ? (
+            <p className="mt-2 text-xs text-muted">
+              Inference status: <span className="font-semibold text-foreground">{eyeStateLabel === "Unknown" ? "Waiting for model output..." : `${eyeStateLabel} (${eyeStateConfidence}%)`}</span>
+              {lastInferenceAt ? <span> · Last update {Math.max(0, Math.floor((Date.now() - lastInferenceAt) / 1000))}s ago</span> : null}
+            </p>
+          ) : null}
 
           <div className="clean-card mt-4 p-3">
             <div className="flex items-center gap-2 text-sm">

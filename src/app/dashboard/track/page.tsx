@@ -58,6 +58,7 @@ export default function TrackSessionPage() {
   const [gazeY, setGazeY] = useState(7.01);
   const [avgEar, setAvgEar] = useState(0.456);
   const [eyeStateLabel, setEyeStateLabel] = useState("Open");
+  const [eyeStateConfidence, setEyeStateConfidence] = useState(0);
   const sessionId = useMemo(() => crypto.randomUUID(), []);
 
   const stopStream = () => {
@@ -126,7 +127,12 @@ export default function TrackSessionPage() {
       if (!res.ok) return;
       const payload = (await res.json()) as FatigueApiResponse;
       setFatigue(payload.data.score);
-      setEyeStateLabel(payload.data.eyeState?.label ?? "Open");
+      if (payload.data.eyeState) {
+        setEyeStateLabel(payload.data.eyeState.label);
+        setEyeStateConfidence(
+          Math.round(Math.max(payload.data.eyeState.closedProbability, payload.data.eyeState.openProbability) * 100)
+        );
+      }
     } catch {
       // Ignore transient failures during live tracking.
     }
@@ -183,6 +189,14 @@ export default function TrackSessionPage() {
   };
 
   const fatigueStroke = clamp(fatigue, 0, 100);
+  const riskLabel = fatigue >= 65 ? "High Risk" : fatigue >= 40 ? "Moderate Risk" : "Low Risk";
+  const riskClass = fatigue >= 65 ? "badge-danger" : fatigue >= 40 ? "badge-warning" : "badge-success";
+  const reportSummary =
+    fatigue >= 65
+      ? "Significant eye fatigue detected. A rest break is strongly recommended before the next session."
+      : fatigue >= 40
+        ? "Moderate fatigue detected. Consider a short break and posture correction."
+        : "Eye condition is currently healthy. Continue routine preventive breaks.";
 
   return (
     <main className="min-h-screen bg-slate-100 pt-16">
@@ -295,6 +309,7 @@ export default function TrackSessionPage() {
                   </div>
                 </div>
                 <p className="mt-3 text-xs text-slate-500">Model eye state: <span className="font-semibold text-slate-700">{eyeStateLabel}</span></p>
+                <p className="mt-1 text-xs text-slate-500">Model confidence: <span className="font-semibold text-slate-700">{eyeStateConfidence}%</span></p>
               </div>
             </section>
           </div>
@@ -303,6 +318,21 @@ export default function TrackSessionPage() {
             <p className="text-6xl">✅</p>
             <h2 className="mt-3 text-5xl font-bold text-slate-900">Session Complete!</h2>
             <p className="mt-2 text-lg text-slate-500">Real computer vision data has been saved to your research database.</p>
+
+            <div className="mt-4">
+              <span className={riskClass}>{riskLabel}</span>
+            </div>
+
+            <div className="mx-auto mt-4 max-w-2xl rounded-xl border border-slate-200 bg-slate-50 p-4 text-left">
+              <p className="text-sm font-semibold text-slate-800">Clinical Session Summary</p>
+              <p className="mt-1 text-sm text-slate-600">{reportSummary}</p>
+              <ul className="mt-3 space-y-1 text-sm text-slate-600">
+                <li>• Final model eye state: <span className="font-semibold text-slate-800">{eyeStateLabel} ({eyeStateConfidence}%)</span></li>
+                <li>• Blink trend: <span className="font-semibold text-slate-800">{blinkRate}/min</span></li>
+                <li>• Eye openness stability (EAR): <span className="font-semibold text-slate-800">{avgEar.toFixed(3)}</span></li>
+                <li>• Recommended next check: <span className="font-semibold text-slate-800">{fatigue >= 65 ? "after 10 minutes rest" : "within 30-60 minutes"}</span></li>
+              </ul>
+            </div>
 
             <div className="mx-auto mt-8 grid max-w-3xl grid-cols-2 gap-4 md:grid-cols-4">
               <div>
