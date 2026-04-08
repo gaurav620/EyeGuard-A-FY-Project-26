@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import Link from "next/link";
 import { Navbar } from "@/components/shared/navbar";
 import { Footer } from "@/components/shared/footer";
 import { LiveEyeCheck } from "@/components/dashboard/live-eye-check";
@@ -42,6 +43,12 @@ export default function DashboardPage() {
                 <Zap className="h-4 w-4" />
                 Start Session
               </a>
+              <Link
+                href="/dashboard/track"
+                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500 transition-colors"
+              >
+                Launch Tracker
+              </Link>
               <a
                 href="/docs"
                 className="inline-flex items-center gap-2 rounded-lg border border-card-border px-4 py-2 text-sm font-semibold text-foreground hover:bg-card transition-colors"
